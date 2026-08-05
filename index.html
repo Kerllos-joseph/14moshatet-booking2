@@ -191,8 +191,9 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'booking-data';
+const DB_URL = 'https://booking-app-ca50d-default-rtdb.europe-west1.firebasedatabase.app';
 let state = { rooms: [], bookings: [] };
+let isSaving = false;
 
 const DEFAULT_ROOMS = [
   { id: 'r1', name: 'غرفة 1', capacity: 5 },
@@ -200,28 +201,51 @@ const DEFAULT_ROOMS = [
   { id: 'r3', name: 'غرفة 3', capacity: 6 },
 ];
 
-async function loadState() {
+async function loadState(silent) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      state = JSON.parse(raw);
-    } else {
+    const res = await fetch(`${DB_URL}/data.json`);
+    const json = await res.json();
+    if (json && json.rooms) {
+      state = json;
+    } else if (!silent) {
       state = { rooms: DEFAULT_ROOMS, bookings: [] };
       await saveState();
     }
   } catch (e) {
-    state = { rooms: DEFAULT_ROOMS, bookings: [] };
+    console.error('load failed', e);
+    if (!silent) showConnError();
   }
   render();
 }
 
 async function saveState() {
+  isSaving = true;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    await fetch(`${DB_URL}/data.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state),
+    });
   } catch (e) {
     console.error('save failed', e);
+    showConnError();
+  }
+  isSaving = false;
+}
+
+function showConnError() {
+  const box = document.getElementById('msgBox');
+  if (box) {
+    box.textContent = 'في مشكلة اتصال بالسيرفر، جرب تاني';
+    box.className = 'msg show err';
   }
 }
+
+// keep in sync with other devices without wiping what the user is typing
+setInterval(() => {
+  const typing = document.activeElement && document.activeElement.id === 'nameInput';
+  if (!isSaving && !typing) loadState(true);
+}, 4000);
 
 function occupantsOf(roomId) {
   return state.bookings.filter(b => b.roomId === roomId);
