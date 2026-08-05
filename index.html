@@ -243,7 +243,8 @@ function showConnError() {
 
 // keep in sync with other devices without wiping what the user is typing
 setInterval(() => {
-  const typing = document.activeElement && document.activeElement.id === 'nameInput';
+  const active = document.activeElement;
+  const typing = active && (active.tagName === 'INPUT' || active.tagName === 'SELECT');
   if (!isSaving && !typing) loadState(true);
 }, 4000);
 
