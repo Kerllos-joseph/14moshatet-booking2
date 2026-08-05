@@ -206,7 +206,7 @@ async function loadState(silent) {
     const res = await fetch(`${DB_URL}/data.json`);
     const json = await res.json();
     if (json && json.rooms) {
-      state = json;
+      state = { rooms: json.rooms, bookings: json.bookings || [] };
     } else if (!silent) {
       state = { rooms: DEFAULT_ROOMS, bookings: [] };
       await saveState();
